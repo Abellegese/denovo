@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/bb053ceb4e8f472987b3551c407382c1/artifacts
+end_time: 1711476108037
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: bb053ceb4e8f472987b3551c407382c1
+run_name: bold-ape-177
+run_uuid: bb053ceb4e8f472987b3551c407382c1
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711475974481
+status: 3
+tags: []
+user_id: abellegese

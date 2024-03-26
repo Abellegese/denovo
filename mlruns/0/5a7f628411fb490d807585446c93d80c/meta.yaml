@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/5a7f628411fb490d807585446c93d80c/artifacts
+end_time: 1711414876033
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 5a7f628411fb490d807585446c93d80c
+run_name: loud-calf-48
+run_uuid: 5a7f628411fb490d807585446c93d80c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711414699093
+status: 3
+tags: []
+user_id: abellegese

@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/703111a6d59442688c83e63f328cb8f5/artifacts
+end_time: 1711415948551
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 703111a6d59442688c83e63f328cb8f5
+run_name: trusting-sponge-425
+run_uuid: 703111a6d59442688c83e63f328cb8f5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711415852413
+status: 3
+tags: []
+user_id: abellegese

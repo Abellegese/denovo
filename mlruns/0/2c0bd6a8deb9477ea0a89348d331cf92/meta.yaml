@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/2c0bd6a8deb9477ea0a89348d331cf92/artifacts
+end_time: 1711413815714
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 2c0bd6a8deb9477ea0a89348d331cf92
+run_name: dapper-cat-307
+run_uuid: 2c0bd6a8deb9477ea0a89348d331cf92
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711413637568
+status: 3
+tags: []
+user_id: abellegese

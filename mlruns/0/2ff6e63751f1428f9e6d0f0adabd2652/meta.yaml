@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/2ff6e63751f1428f9e6d0f0adabd2652/artifacts
+end_time: 1711416502230
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 2ff6e63751f1428f9e6d0f0adabd2652
+run_name: monumental-fawn-499
+run_uuid: 2ff6e63751f1428f9e6d0f0adabd2652
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711416423155
+status: 3
+tags: []
+user_id: abellegese

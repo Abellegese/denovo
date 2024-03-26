@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/c604ab78881b4e2993be1b36ba294363/artifacts
+end_time: 1711417217441
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: c604ab78881b4e2993be1b36ba294363
+run_name: secretive-yak-419
+run_uuid: c604ab78881b4e2993be1b36ba294363
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711417121937
+status: 3
+tags: []
+user_id: abellegese
