@@ -15,5 +15,8 @@ fi
 # Commit changes with the specified message
 git commit -m "$commit_message"
 
+# Merge 'main' branch into 'master'
+git merge main
+
 # Push changes to the 'master' branch on the remote repository
 git push -u origin master
