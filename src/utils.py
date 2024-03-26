@@ -2,19 +2,6 @@ import jax.numpy as jnp
 import math
 import flax.linen as nn
 
-
-def scaled_dot_product(q, k, v, mask=None):
-    d_k = q.shape[-1]
-    attn_logits = jnp.matmul(q, jnp.swapaxes(k, -2, -1))
-    attn_logits = attn_logits / math.sqrt(d_k)
-    # check for improvement
-    if mask is not None:
-        attn_logits = jnp.where(mask == 0, -9e15, attn_logits)
-    attention = nn.softmax(attn_logits, axis=-1)
-    values = jnp.matmul(attention, v)
-    return values, attention
-
-
 def expand_mask(mask):
     assert (
         mask.ndim > 2
