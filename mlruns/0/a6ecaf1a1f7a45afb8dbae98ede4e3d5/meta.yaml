@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/a6ecaf1a1f7a45afb8dbae98ede4e3d5/artifacts
+end_time: 1711627972342
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: a6ecaf1a1f7a45afb8dbae98ede4e3d5
+run_name: kindly-frog-52
+run_uuid: a6ecaf1a1f7a45afb8dbae98ede4e3d5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711627964370
+status: 4
+tags: []
+user_id: abellegese

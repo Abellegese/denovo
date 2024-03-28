@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/1a8e966101ce4f2a87bf9216c553730f/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 1a8e966101ce4f2a87bf9216c553730f
+run_name: peaceful-jay-566
+run_uuid: 1a8e966101ce4f2a87bf9216c553730f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711599401884
+status: 1
+tags: []
+user_id: abellegese

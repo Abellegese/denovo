@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/aebab8cf0c644538aab41b1b274deb43/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: aebab8cf0c644538aab41b1b274deb43
+run_name: abundant-sloth-643
+run_uuid: aebab8cf0c644538aab41b1b274deb43
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711629406125
+status: 1
+tags: []
+user_id: abellegese

@@ -1,7 +1,7 @@
 import flax.linen as nn
 import jax.numpy as jnp
 from utils import *
-
+import jax
 
 class MultiScalePeakEmbedding(nn.Module):
     """Multi-scale sinusoidal embedding based on Voronov et. al."""
@@ -157,13 +157,18 @@ class Encoder(nn.Module):
     eos_id: int = 2
     use_depthcharge: bool = True
     dec_precursor_sos: bool = True
-
+    
     def setup(self):
+        # self.latent_spectrum = self.param(
+        #     "latent_spectrum",
+        #     nn.initializers.zeros,
+        #     (1, 1, self.dim_model),
+        # )
+        # self.latent_spectrum = self.param('latent_spectrum', lambda rng, shape: jnp.zeros(shape), (1, 1, self.dim_model))
         self.latent_spectrum = self.param(
-            "latent_spectrum",
-            nn.initializers.zeros,
-            (1, 1, self.dim_model),
-        )
+              'latent_spectrum', 
+               lambda rng, shape: 
+               jax.random.normal(jax.random.PRNGKey(0), shape),(1, 1, self.dim_model))
 
         self.encoder = TransformerEncoder(
             num_layers=self.n_layers,

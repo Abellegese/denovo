@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/a0b2c9d53622497a91892133dc211b5c/artifacts
+end_time: 1711500833319
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: a0b2c9d53622497a91892133dc211b5c
+run_name: intelligent-ant-63
+run_uuid: a0b2c9d53622497a91892133dc211b5c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711500806857
+status: 3
+tags: []
+user_id: abellegese

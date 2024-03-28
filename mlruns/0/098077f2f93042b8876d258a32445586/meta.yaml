@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/098077f2f93042b8876d258a32445586/artifacts
+end_time: 1711503545538
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 098077f2f93042b8876d258a32445586
+run_name: gaudy-rat-136
+run_uuid: 098077f2f93042b8876d258a32445586
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711503517205
+status: 3
+tags: []
+user_id: abellegese

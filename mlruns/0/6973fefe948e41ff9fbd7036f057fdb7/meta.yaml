@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/6973fefe948e41ff9fbd7036f057fdb7/artifacts
+end_time: 1711505481139
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 6973fefe948e41ff9fbd7036f057fdb7
+run_name: clean-slug-166
+run_uuid: 6973fefe948e41ff9fbd7036f057fdb7
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711505460736
+status: 3
+tags: []
+user_id: abellegese

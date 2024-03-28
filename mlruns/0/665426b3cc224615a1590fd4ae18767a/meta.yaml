@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/665426b3cc224615a1590fd4ae18767a/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 665426b3cc224615a1590fd4ae18767a
+run_name: adaptable-hound-454
+run_uuid: 665426b3cc224615a1590fd4ae18767a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711635277324
+status: 1
+tags: []
+user_id: abellegese

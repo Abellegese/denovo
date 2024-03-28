@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/82ee64a1803141169e96e44e689d8526/artifacts
+end_time: 1711504848868
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 82ee64a1803141169e96e44e689d8526
+run_name: lyrical-rat-203
+run_uuid: 82ee64a1803141169e96e44e689d8526
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711504820276
+status: 3
+tags: []
+user_id: abellegese
