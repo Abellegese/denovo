@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/ef3183298af64e17a23ba7ede2fef28a/artifacts
+end_time: 1711633316632
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: ef3183298af64e17a23ba7ede2fef28a
+run_name: gregarious-grub-757
+run_uuid: ef3183298af64e17a23ba7ede2fef28a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711633315709
+status: 4
+tags: []
+user_id: abellegese

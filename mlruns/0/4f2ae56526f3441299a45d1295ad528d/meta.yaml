@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/4f2ae56526f3441299a45d1295ad528d/artifacts
+end_time: 1711501517775
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 4f2ae56526f3441299a45d1295ad528d
+run_name: defiant-shrimp-453
+run_uuid: 4f2ae56526f3441299a45d1295ad528d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711501491272
+status: 3
+tags: []
+user_id: abellegese

@@ -2,6 +2,13 @@ from loss import InfoNCELoss
 import jax
 import jax.numpy as jnp
 import flax.linen as nn
+from utils import *
+def _get_causal_mask(seq_len: int) -> jnp.ndarray:
+    mask = jnp.triu(jnp.ones((seq_len, seq_len))) == 1
+    mask = mask.astype(jnp.float32) 
+    mask = mask.at[mask == 0].set(-jnp.inf)
+    mask = mask.at[mask == 1].set(0.0)
+    return jnp.transpose(mask)
 
 
 class AutoregressiveModel(nn.Module):
@@ -17,7 +24,8 @@ class AutoregressiveModel(nn.Module):
 
     @nn.compact
     def __call__(self, x):
-        out = self.mha(x)  # Self attention
+        x_mask = _get_causal_mask(x.shape[1])
+        out = self.mha(x, mask=x_mask)  # Self attention
         out = self.layer_norm(x + out)  # Add & Norm
         out = self.fc(out)  # Feed forward
         return out
@@ -29,6 +37,7 @@ class CPCModel(nn.Module):
     output_dim: int
     batch_size: int
     encoders: any
+    regressor:bool = True
 
     def setup(self):
         self.encoder = self.encoders
@@ -48,7 +57,10 @@ class CPCModel(nn.Module):
     def get_latent_representations(self, spectra, precurs, spectr_mask):
         z = self.encoder(spectra, precurs, spectr_mask)
         z = z[0]
+        # making it suitable for inference time
+        # if self.regressor:
         c = self.autoregressor(z)
+            # return z, c
         return z, c
 
     def __call__(self, spectra, precurs, spectr_mask):

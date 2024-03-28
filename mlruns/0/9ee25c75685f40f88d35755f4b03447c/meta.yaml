@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/9ee25c75685f40f88d35755f4b03447c/artifacts
+end_time: 1711598687291
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 9ee25c75685f40f88d35755f4b03447c
+run_name: capable-sow-743
+run_uuid: 9ee25c75685f40f88d35755f4b03447c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711598658626
+status: 3
+tags: []
+user_id: abellegese

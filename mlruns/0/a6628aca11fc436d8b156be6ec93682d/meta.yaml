@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/a6628aca11fc436d8b156be6ec93682d/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: a6628aca11fc436d8b156be6ec93682d
+run_name: luxuriant-croc-58
+run_uuid: a6628aca11fc436d8b156be6ec93682d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711630709582
+status: 1
+tags: []
+user_id: abellegese

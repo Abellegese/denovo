@@ -1,0 +1,15 @@
+artifact_uri: file:///var/autofs/misc/home/abellegese/Videos/pipeline/mlruns/0/fc31655f39fb438eb1bd1fabab8a28b1/artifacts
+end_time: 1711630106410
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: fc31655f39fb438eb1bd1fabab8a28b1
+run_name: rare-skink-378
+run_uuid: fc31655f39fb438eb1bd1fabab8a28b1
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1711630014589
+status: 4
+tags: []
+user_id: abellegese

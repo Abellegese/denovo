@@ -26,6 +26,7 @@ from torch.utils.data import random_split
 from flax.training import checkpoints
 from flax import struct
 from typing import Any
+from jax import lax
 
 # os.environ["XLA_FLAGS"] = '--xla_force_host_platform_device_count=8'
 
@@ -75,18 +76,19 @@ def create_train_state(
         output_dim=ModelConfig.output_dim,
         batch_size=batch_size,
         encoders=encoder,
+        regressor=True
     )
     init_rngs = {
         "params": jax.random.key(0),
         "dropout": jax.random.key(1),
     }
     params = cpc.init(init_rngs, spectras, precursor, spectr_mask)["params"]
-    tx = optax.sgd(learning_rate, momentum)
+    tx = optax.adam(learning_rate)
     return train_state.TrainState.create(apply_fn=cpc.apply, params=params, tx=tx)
 
 
 # Update apply_model function
-def apply_model(state, data, batch_size):
+def apply_model(state, data, batch_size, compute_grads=True):
     spectra, precurs, spectr_mask = data
     spectr_mask = spectr_mask.unsqueeze(2).numpy()
     encoder = ModelConfig.encoder
@@ -98,6 +100,7 @@ def apply_model(state, data, batch_size):
             output_dim=ModelConfig.output_dim,
             batch_size=batch_size,
             encoders=encoder,
+            regressor=True
         ).apply(
             {"params": params},
             spectra,
@@ -106,11 +109,10 @@ def apply_model(state, data, batch_size):
             rngs={"dropout": jax.random.key(5)},
         )
         return loss
-
+    # Normal Loss
     grad_fn = jax.value_and_grad(loss_fn)
     (loss), grads = grad_fn(state.params)
     return grads, loss
-
 
 # @jax.pmap
 def update_model(state, grads):
@@ -118,12 +120,13 @@ def update_model(state, grads):
 
 
 def train_one_epoch(state, dataloader, num_epochs, size, batch_size):
-    """Train for 1 epoch on the training set."""
-    epoch_loss = []
+    epoch_train_loss, epoch_val_loss = [], []
+    train_dataloader, val_dataloader = dataloader
+
     with mlflow.start_run():
         for epoch in range(num_epochs):
             for cnt, data in tqdm(
-                enumerate(dataloader), total=(math.ceil(size / batch_size))
+                enumerate(train_dataloader), total=(math.ceil(size / batch_size))
             ):
                 spectra, precursors, spectra_mask, peptides, _ = data
                 grads, loss = apply_model(
@@ -131,24 +134,45 @@ def train_one_epoch(state, dataloader, num_epochs, size, batch_size):
                     (spectra, precursors, spectra_mask),
                     batch_size=batch_size,
                 )
+                
+                del spectra, precursors, spectra_mask, peptides, _, data
                 state = update_model(state, grads)
+                del grads
             # epoch_loss.append(jax_utils.unreplicate(loss))
-            epoch_loss.append(loss)
-            train_loss = np.mean(epoch_loss)
+            epoch_train_loss.append(loss)
+            train_loss = np.mean(epoch_train_loss)
+
+            for cnt, data in tqdm(
+                enumerate(val_dataloader), total=(math.ceil(size / batch_size))
+            ):
+                spectra, precursors, spectra_mask, peptides, _ = data
+                grads, val_loss = apply_model(
+                    state,
+                    (spectra, precursors, spectra_mask),
+                    batch_size=batch_size, compute_grads=False
+                )
+                del spectra, precursors, spectra_mask, peptides, _, data
+                del grads
+                # state = update_model(state, grads)
+            # epoch_loss.append(jax_utils.unreplicate(loss))
+            epoch_val_loss.append(val_loss)
+            val_loss = np.mean(epoch_val_loss)         
 
             print(
-                f"Epoch: {epoch + 1}, train loss: {train_loss:.4f}",
+                f"Epoch: {epoch + 1}, train loss: {train_loss:.4f}, validation loss: {val_loss}",
                 flush=True,
             )
             # Mlflow logging
             now = time.time()
             mlflow.log_metric(key="quality", value=2 * epoch, step=epoch)
             mlflow.log_metric(key="train_loss", value=train_loss, step=epoch)
+            mlflow.log_metric("val_loss", value=val_loss, step=epoch)
 
     return state, epoch_loss
 
 
 def _save_model(path, ckpt):
+    # optimized serilizer
     orbax_checkpointer = orbax.checkpoint.PyTreeCheckpointer()
     save_args = orbax_utils.save_args_from_target(ckpt)
     orbax_checkpointer.save(path, ckpt, save_args=save_args)
@@ -164,25 +188,37 @@ def _build_vocab(config):
 
 
 @click.command()
-@click.option("--learning_rate", default=1e-3, help="Learning rate for training")
+@click.option("--learning_rate", default=1e-5, help="Learning rate for training")
 @click.option("--momentum", default=0.9, help="Momentum for training")
 @click.option("--num_epochs", default=10, help="Number of epochs for training")
 @click.option("--batch_size", default=32, help="Batch size for training")
-def main(learning_rate, momentum, num_epochs, batch_size):
+@click.option("--save", default=True, help="Batch size for training")
+def main(learning_rate, momentum, num_epochs, batch_size, save):
     # Load your data and create dataloade
     dataset = load_dataset("InstaDeepAI/ms_ninespecies_benchmark", split="test[:1%]")
     # building vocab
     vocab, s2i, i2s = _build_vocab(CONFIG)
     # taking 5% percent of it just for experiment
     ds = SpectrumDataset(dataset, s2i, CONFIG["n_peaks"], return_str=True)
-    train_size = int(0.95 * len(ds))
-    test_size = len(ds) - train_size
-    train_dataset, test_dataset = random_split(ds, [train_size, test_size])
-    dataloader = DataLoader(
-        test_dataset, batch_size, shuffle=False, collate_fn=collate_batch
-    )
+    # train_size = int(0.85 * len(ds))
+    # test_size = len(ds) - train_size
+    # train_dataset, test_dataset = random_split(ds, [train_size, test_size])
+    # val_dataloader = DataLoader(
+    #     test_dataset, batch_size, shuffle=False, collate_fn=collate_batch
+    # )
+    # train_dataloader = DataLoader(
+    #     test_dataset, batch_size, shuffle=True, collate_fn=collate_batch
+    # )
+    train_size = int(0.1 * len(ds))  # 10% of the data for training
+    test_size = int(0.01 * len(ds))   # 1% of the data for testing
+    val_size = len(ds) - train_size - test_size
 
-    spectra, precursors, spectra_mask, peptides, _ = next(iter(dataloader))
+    train_dataset, test_dataset, val_dataset = random_split(ds, [train_size, test_size, val_size])
+    val_dataloader = DataLoader(val_dataset, batch_size, shuffle=False, collate_fn=collate_batch)
+    train_dataloader = DataLoader(train_dataset, batch_size, shuffle=True, collate_fn=collate_batch)
+
+    dataloader = (train_dataloader, val_dataloader)
+    spectra, precursors, spectra_mask, peptides, _ = next(iter(train_dataloader))
     # Initialize the training state
     rng = jax.random.PRNGKey(4)
     state = create_train_state(
@@ -202,7 +238,8 @@ def main(learning_rate, momentum, num_epochs, batch_size):
     # creat a checkpoint
     ckpt = {"model": state}
     # save the model
-    _save_model("/home/abellegese/Videos/pipeline/artifacts/", ckpt)
+    if save:
+        _save_model("/home/abellegese/Videos/pipeline/artifacts/", ckpt)
 
     print("Total time: ", time.time() - start, "seconds", "Loss", epoch_loss)
 
