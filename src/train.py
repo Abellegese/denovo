@@ -27,19 +27,16 @@ from flax.training import checkpoints
 from flax import struct
 from typing import Any
 from jax import lax
-
+from flax.training.early_stopping import EarlyStopping
 # os.environ["XLA_FLAGS"] = '--xla_force_host_platform_device_count=8'
 # jax.config.update("jax_platform_name", "gpu")
 # Config Path
 PATH = "configs/base.yaml"
 
-
 def _config(path):
     with open(path, "r") as conf:
         config = yaml.safe_load(conf)
     return config
-
-
 # Reading the config
 CONFIG = _config(PATH)
 
@@ -62,10 +59,11 @@ def _build_encoder(config):
 
 @struct.dataclass
 class ModelConfig:
-    input_dim: int = 768
-    hidden_dim: int = 166
-    output_dim: int = 166
+    input_dim: int = 512
+    hidden_dim: int = 256
+    output_dim: int = 256
     encoder: Any = _build_encoder(config=CONFIG)
+    dropout:bool = True
 
 
 # @functools.partial(jax.pmap, static_broadcasted_argnums=(1, 2))
@@ -92,7 +90,7 @@ def create_train_state(
 
 def loss_fn(params, data, batch_size):
     spectra, precurs, spectr_mask = data
-    # spectr_mask = spectr_mask.unsqueeze(2).numpy()
+    spectr_mask = spectr_mask.unsqueeze(2).numpy()
 
     loss, z, c = CPCModel(
         input_dim=ModelConfig.input_dim,
@@ -130,19 +128,7 @@ def update_model(state, grads):
     return state.apply_gradients(grads=grads)
 
 
-def convert_and_add_dimension(spectra, precursors, spectra_mask):
-    # Convert Torch tensors to JAX arrays with dtype jnp.float16
-    spectra_jax = jnp.array(spectra.detach().cpu().numpy(), dtype=jnp.bfloat16)
-    precursors_jax = jnp.array(precursors.detach().cpu().numpy(), dtype=jnp.bfloat16)
-    spectra_mask_jax = jnp.array(spectra_mask.detach().cpu().numpy(), dtype=jnp.bfloat16)
-
-    # Add an additional dimension to spectra_mask_jax
-    spectra_mask_jax = jnp.expand_dims(spectra_mask_jax, axis=-1)
-
-    return spectra_jax, precursors_jax, spectra_mask_jax
-
-
-def train_one_epoch(state, dataloader, num_epochs, size, batch_size):
+def train_one_epoch(state, dataloader, num_epochs, size, size2, batch_size):
     epoch_train_loss, epoch_val_loss = [], []
     train_dataloader, val_dataloader = dataloader
 
@@ -152,12 +138,6 @@ def train_one_epoch(state, dataloader, num_epochs, size, batch_size):
                 enumerate(train_dataloader), total=(math.ceil(size / batch_size))
             ):
                 spectra, precursors, spectra_mask, peptides, _ = data
-                # convert the precision
-                spectra, precursors, spectra_mask = convert_and_add_dimension(
-                    spectra, 
-                    precursors, 
-                    spectra_mask
-                )
                 grads, loss = apply_model(
                     state,
                     (spectra, precursors, spectra_mask),
@@ -172,15 +152,9 @@ def train_one_epoch(state, dataloader, num_epochs, size, batch_size):
             train_loss = np.mean(epoch_train_loss)
 
             for cnt, data in tqdm(
-                enumerate(val_dataloader), total=(math.ceil(size / batch_size))
+                enumerate(val_dataloader), total=(math.ceil(size2 / batch_size))
             ):
                 spectra, precursors, spectra_mask, peptides, _ = data
-                # convert the precision
-                spectra, precursors, spectra_mask = convert_and_add_dimension(
-                    spectra, 
-                    precursors, 
-                    spectra_mask
-                )
                 val_loss = evaluate_model(
                     state.params, (spectra, precursors, spectra_mask), batch_size
                 )
@@ -255,14 +229,8 @@ def main(learning_rate, momentum, num_epochs, batch_size, save):
     train_dataloader = DataLoader(
         train_dataset, batch_size, shuffle=True, collate_fn=collate_batch
     )
-
     dataloader = (train_dataloader, val_dataloader)
     spectra, precursors, spectra_mask, peptides, _ = next(iter(train_dataloader))
-    spectra, precursors, spectra_mask = convert_and_add_dimension(
-            spectra, 
-            precursors, 
-            spectra_mask
-        )
     # Initialize the training state
     rng = jax.random.PRNGKey(4)
     state = create_train_state(
@@ -271,13 +239,13 @@ def main(learning_rate, momentum, num_epochs, batch_size, save):
         momentum,
         spectra,
         precursors,
-        spectra_mask,
+        spectra_mask.unsqueeze(-1).numpy(),
         batch_size,
     )
     # state = jax_utils.replicate(state)
     start = time.time()
     state, epoch_loss = train_one_epoch(
-        state, dataloader, num_epochs, len(test_dataset), batch_size
+        state, dataloader, num_epochs, len(train_dataset), len(test_dataset), batch_size
     )
     # creat a checkpoint
     ckpt = {"model": state}
