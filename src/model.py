@@ -3,6 +3,14 @@ import jax
 import jax.numpy as jnp
 import flax.linen as nn
 from utils import *
+from flax import struct
+from typing import Any
+
+
+@struct.dataclass
+class Config:
+  dtype: Any = jnp.bfloat16
+
 def _get_causal_mask(seq_len: int) -> jnp.ndarray:
     mask = jnp.triu(jnp.ones((seq_len, seq_len))) == 1
     mask = mask.astype(jnp.float32) 
@@ -17,10 +25,10 @@ class AutoregressiveModel(nn.Module):
 
     def setup(self):
         self.mha = nn.MultiHeadDotProductAttention(
-            num_heads=self.n_heads, qkv_features=self.output_dim
+            num_heads=self.n_heads, qkv_features=self.output_dim, dtype=Config.dtype
         )
         self.layer_norm = nn.LayerNorm()
-        self.fc = nn.Dense(self.output_dim)
+        self.fc = nn.Dense(self.output_dim, dtype=Config.dtype)
 
     @nn.compact
     def __call__(self, x):
@@ -49,21 +57,16 @@ class CPCModel(nn.Module):
             pred_timestep=12,
         )
 
-    def get_latent_size(self, input_size):
-        x = jnp.zeros(input_size)
-        z, c = self.get_latent_representations(x, x, x)
-        return c.shape[-2], c.shape[-1]
-
     def get_latent_representations(self, spectra, precurs, spectr_mask):
-        z = self.encoder(spectra, precurs, spectr_mask)
-        z = z[0]
+        embedding = self.encoder(spectra, precurs, spectr_mask)
+        embedding = embedding[0]
         # making it suitable for inference time
         # if self.regressor:
-        c = self.autoregressor(z)
+        context = self.autoregressor(embedding)
             # return z, c
-        return z, c
+        return embedding, context
 
     def __call__(self, spectra, precurs, spectr_mask):
-        z, c = self.get_latent_representations(spectra, precurs, spectr_mask)
-        loss = self.loss(spectra, z, c)
-        return loss, z, c
+        embedding, context = self.get_latent_representations(spectra, precurs, spectr_mask)
+        loss = self.loss(spectra, embedding, context)
+        return loss, embedding, context

@@ -2,6 +2,14 @@ import flax.linen as nn
 import jax.numpy as jnp
 from utils import *
 import jax
+from flax import struct
+from typing import Any
+
+
+@struct.dataclass
+class Config:
+  dtype: Any = jnp.bfloat16
+
 
 class MultiScalePeakEmbedding(nn.Module):
     """Multi-scale sinusoidal embedding based on Voronov et. al."""
@@ -44,7 +52,7 @@ class EncoderBlock(nn.Module):
         #     embed_dim=self.input_dim, num_heads=self.num_heads
         # )
         self.self_attn = nn.MultiHeadDotProductAttention(
-            qkv_features=self.input_dim, num_heads=self.num_heads
+            qkv_features=self.input_dim, num_heads=self.num_heads, dtype=Config.dtype
         )
         # Two-layer MLP
         self.linear = [
@@ -121,10 +129,10 @@ class MLP(nn.Module):
 
     @nn.compact
     def __call__(self, x):
-        x = nn.Dense(self.h_size)(x)
+        x = nn.Dense(self.h_size, dtype=Config.dtype)(x)
         x = nn.relu(x)
         x = nn.Dropout(rate=0.1, deterministic=False)(x)
-        x = nn.Dense(self.h_size)(x)
+        x = nn.Dense(self.h_size, dtype=Config.dtype)(x)
         x = nn.Dropout(rate=0.1, deterministic=False)(x)
         return x
 
@@ -135,10 +143,10 @@ class Head(nn.Module):
 
     @nn.compact
     def __call__(self, x):
-        x = nn.Dense(self.h_size + 1)(x)
+        x = nn.Dense(self.h_size + 1, dtype=Config.dtype)(x)
         x = nn.relu(x)
         x = nn.Dropout(rate=self.dropout, deterministic=False)(x)
-        x = nn.Dense(self.h_size)(x)
+        x = nn.Dense(self.h_size, dtype=Config.dtype)(x)
         x = nn.Dropout(rate=self.dropout, deterministic=False)(x)
         return x
 
@@ -168,7 +176,7 @@ class Encoder(nn.Module):
         self.latent_spectrum = self.param(
               'latent_spectrum', 
                lambda rng, shape: 
-               jax.random.normal(jax.random.PRNGKey(0), shape),(1, 1, self.dim_model))
+               jax.random.normal(jax.random.PRNGKey(0), shape, dtype=Config.dtype),(1, 1, self.dim_model))
 
         self.encoder = TransformerEncoder(
             num_layers=self.n_layers,
@@ -183,7 +191,7 @@ class Encoder(nn.Module):
                 self.dim_model, dropout=self.dropout
             )
             self.mass_encoder = self.peak_encoder.encode_mass
-            self.charge_encoder = nn.Embed(self.max_charge, self.dim_model)
+            self.charge_encoder = nn.Embed(self.max_charge, self.dim_model, dtype=Config.dtype)
 
     @nn.compact
     def __call__(self, x, p, x_mask):

@@ -1,7 +1,12 @@
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
+from flax import struct
+from typing import Any
 
+@struct.dataclass
+class Config:
+  dtype: Any = jnp.bfloat16
 
 class InfoNCELoss(nn.Module):
     gar_hidden: int
@@ -19,7 +24,7 @@ class InfoNCELoss(nn.Module):
     def predictor(self, c):
         return nn.Dense(
             features=self.genc_hidden * self.pred_timestep,
-            use_bias=False,
+            use_bias=False, dtype=Config.dtype
         )(c)
 
     def get_pos_sample_f(self, Wc_k, z_k):
@@ -51,8 +56,7 @@ class InfoNCELoss(nn.Module):
         return f_k
 
     def infonce_loss(self, Wc, z, full_z):
-        seq_len = z.shape[1]
-        total_loss = 0.0
+        seq_len, loss = z.shape[1], 0.0
         # sampling method 1 / 2
         z_neg, _, _ = self.get_neg_z(full_z)
 
@@ -63,7 +67,6 @@ class InfoNCELoss(nn.Module):
                 :-k,
                 (k - 1) * self.genc_hidden : k * self.genc_hidden,
             ]
-
             z_k = z_k.reshape(-1, z_k.shape[-1])
             Wc_k = Wc_k.reshape(-1, Wc_k.shape[-1])
             pos_samples = self.get_pos_sample_f(Wc_k, z_k)
@@ -71,12 +74,11 @@ class InfoNCELoss(nn.Module):
 
             # concatenate positive and negative samples
             results = jnp.concatenate((pos_samples, neg_samples), axis=1)
-            loss = nn.log_softmax(results)[:, 0]
+            _loss = nn.log_softmax(results)[:, 0]
 
-            total_samples = (seq_len - k) * self.batch_size
-            loss = -loss.sum() / total_samples
-            total_loss += loss
-
-        total_loss /= self.pred_timestep
-
-        return total_loss
+            n_samples = (seq_len - k) * self.batch_size
+            _loss = -_loss.sum() / n_samples
+            loss += _loss
+        # Normilizing the loss accross prediction timesteps
+        loss /= self.pred_timestep
+        return loss
