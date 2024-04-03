@@ -13,7 +13,6 @@ class Config:
 
 class MultiScalePeakEmbedding(nn.Module):
     """Multi-scale sinusoidal embedding based on Voronov et. al."""
-
     h_size: int = 512
     dropout: float = 0.0
     train:bool = True
@@ -46,7 +45,7 @@ class EncoderBlock(nn.Module):
     num_heads: int
     dim_feedforward: int
     dropout_prob: float
-    train: bool
+    train: bool = True
 
     def setup(self):
         # Attention layer
@@ -74,7 +73,7 @@ class EncoderBlock(nn.Module):
             # expand mask
             mask = expand_mask(mask)
         x = self.self_attn(x, mask=mask)
-        x = x + self.dropout(x, deterministic=not self.train)
+        x = x + self.dropout(x)
         x = self.norm1(x)
 
         # MLP part
@@ -83,9 +82,9 @@ class EncoderBlock(nn.Module):
             linear_out = (
                 l(linear_out)
                 if not isinstance(l, nn.Dropout)
-                else l(linear_out, deterministic=not self.train)
+                else l(linear_out)
             )
-        x = x + self.dropout(linear_out, deterministic=not self.train)
+        x = x + self.dropout(linear_out)
         x = self.norm2(x)
 
         return x
@@ -97,7 +96,7 @@ class TransformerEncoder(nn.Module):
     num_heads: int
     dim_feedforward: int
     dropout_prob: float
-    train: bool
+    train: bool = True
 
     def setup(self):
         self.layers = [
@@ -173,7 +172,7 @@ class Encoder(nn.Module):
 
         if not self.dec_precursor_sos:
             self.peak_encoder = MultiScalePeakEmbedding(
-                self.dim_model, dropout=self.dropout, self.train
+                self.dim_model, dropout=self.dropout, train=self.train
             )
             self.mass_encoder = self.peak_encoder.encode_mass
             self.charge_encoder = nn.Embed(self.max_charge, self.dim_model, dtype=Config.dtype)

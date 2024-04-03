@@ -18,7 +18,6 @@ def _get_causal_mask(seq_len: int) -> jnp.ndarray:
     mask = mask.at[mask == 1].set(0.0)
     return jnp.transpose(mask)
 
-
 class AutoregressiveModel(nn.Module):
     output_dim: int
     n_heads: int
@@ -38,7 +37,6 @@ class AutoregressiveModel(nn.Module):
         out = self.fc(out)  # Feed forward
         return out
 
-
 class CPCModel(nn.Module):
     input_dim: int
     hidden_dim: int
@@ -46,7 +44,6 @@ class CPCModel(nn.Module):
     batch_size: int
     encoders: any
     regressor:bool = True
-
     def setup(self):
         self.encoder = self.encoders
         self.autoregressor = AutoregressiveModel(self.hidden_dim, self.output_dim)
@@ -56,17 +53,19 @@ class CPCModel(nn.Module):
             batch_size=self.batch_size,
             pred_timestep=12,
         )
-
     def get_latent_representations(self, spectra, precurs, spectr_mask):
         embedding = self.encoder(spectra, precurs, spectr_mask)
         embedding = embedding[0]
         # making it suitable for inference time
-        # if self.regressor:
-        context = self.autoregressor(embedding)
-            # return z, c
-        return embedding, context
+        # we dont use the decoder afeter
+        if self.regressor:
+            context = self.autoregressor(embedding)
+            return embedding, context
+        return embedding, None
 
     def __call__(self, spectra, precurs, spectr_mask):
         embedding, context = self.get_latent_representations(spectra, precurs, spectr_mask)
-        loss = self.loss(spectra, embedding, context)
-        return loss, embedding, context
+        if self.regressor:
+            loss = self.loss(spectra, embedding, context)
+            return loss, embedding, context
+        return None, embedding, None

@@ -42,7 +42,7 @@ tsne_embeddings = compute_tsne_embeddings(reshaped_embeddings)
 # Plot the embeddings
 import matplotlib.pyplot as plt
 plt.figure(figsize=(10, 8))
-plt.scatter(tsne_embeddings[:, 0], tsne_embeddings[:, 1], s=10)  # Adjust size ('s') as needed
+plt.scatter(tsne_embeddings[:, 0], tsne_embeddings[:, 1], s=10)
 plt.title('t-SNE Visualization of Transformer Embeddings')
 plt.xlabel('t-SNE Dimension 1')
 plt.ylabel('t-SNE Dimension 2')
