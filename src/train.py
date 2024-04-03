@@ -228,7 +228,7 @@ def _build_vocab(config):
 @click.option("--num_epochs", default=10, help="Number of epochs for training")
 @click.option("--batch_size", default=10, help="Batch size for training")
 @click.option("--save", default=True, help="Batch size for training")
-@click.option("--save_path", default=True, help="to save the pretrained model")
+@click.option("--save_path", help="to save the pretrained model")
 def main(learning_rate, momentum, num_epochs, batch_size, save, save_path):
     # Load your data and create dataloade
     dataset = load_dataset("InstaDeepAI/ms_ninespecies_benchmark", split="train[:50%]")
