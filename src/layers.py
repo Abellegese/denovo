@@ -1,3 +1,10 @@
+"""
+Implementation of the Encoder are Adapted from the Instanovo
+Github:
+
+"""
+
+
 import flax.linen as nn
 import jax.numpy as jnp
 from utils import *
@@ -13,6 +20,7 @@ class Config:
 
 class MultiScalePeakEmbedding(nn.Module):
     """Multi-scale sinusoidal embedding based on Voronov et. al."""
+
     h_size: int = 512
     dropout: float = 0.0
     train:bool = True
@@ -45,7 +53,7 @@ class EncoderBlock(nn.Module):
     num_heads: int
     dim_feedforward: int
     dropout_prob: float
-    train: bool = True
+    train: bool
 
     def setup(self):
         # Attention layer
@@ -73,7 +81,7 @@ class EncoderBlock(nn.Module):
             # expand mask
             mask = expand_mask(mask)
         x = self.self_attn(x, mask=mask)
-        x = x + self.dropout(x)
+        x = x + self.dropout(x, deterministic=not self.train)
         x = self.norm1(x)
 
         # MLP part
@@ -82,9 +90,9 @@ class EncoderBlock(nn.Module):
             linear_out = (
                 l(linear_out)
                 if not isinstance(l, nn.Dropout)
-                else l(linear_out)
+                else l(linear_out, deterministic=not self.train)
             )
-        x = x + self.dropout(linear_out)
+        x = x + self.dropout(linear_out, deterministic=not self.train)
         x = self.norm2(x)
 
         return x
@@ -96,7 +104,7 @@ class TransformerEncoder(nn.Module):
     num_heads: int
     dim_feedforward: int
     dropout_prob: float
-    train: bool = True
+    train: bool
 
     def setup(self):
         self.layers = [
@@ -133,7 +141,8 @@ class MLP(nn.Module):
 class Head(nn.Module):
     h_size: int = 512
     dropout: float = 0.0
-    train:bool = True
+    train: bool = True
+
     @nn.compact
     def __call__(self, x):
         x = nn.Dense(self.h_size + 1, dtype=Config.dtype)(x)
@@ -158,9 +167,10 @@ class Encoder(nn.Module):
     eos_id: int = 2
     use_depthcharge: bool = True
     dec_precursor_sos: bool = True
-    train:bool = True
-    
+    train: bool = True
+
     def setup(self):
+        self.latent_spectrum = self.param('latent_spectrum', nn.initializers.normal(), (1, 1, self.dim_model))
         self.encoder = TransformerEncoder(
             num_layers=self.n_layers,
             input_dim=self.dim_model,
@@ -175,7 +185,9 @@ class Encoder(nn.Module):
                 self.dim_model, dropout=self.dropout, train=self.train
             )
             self.mass_encoder = self.peak_encoder.encode_mass
-            self.charge_encoder = nn.Embed(self.max_charge, self.dim_model, dtype=Config.dtype)
+            self.charge_encoder = nn.Embed(
+                self.max_charge, self.dim_model, dtype=Config.dtype
+            )
 
     @nn.compact
     def __call__(self, x, p, x_mask):
@@ -193,6 +205,19 @@ class Encoder(nn.Module):
         else:
             x = self.peak_encoder(x)
         # x = self.peak_norm(x)
+        # Self-attention on latent spectra AND peaks
+        #fmt: off
+        x = jnp.concatenate(
+            (
+                jnp.repeat(self.latent_spectrum, x.shape[0], axis=0), 
+                x
+            ),
+            axis=1,
+        )
+        #fmt: on
+        latent_mask = jnp.zeros((x_mask.shape[0], 1, 1), dtype=bool)
+        x_mask = jnp.concatenate([latent_mask, x_mask], axis=1)
+
         x = self.encoder(x, x_mask)
         if not self.dec_precursor_sos:
             # Prepare precursors
@@ -202,6 +227,5 @@ class Encoder(nn.Module):
             # Concatenate precursors
             x = jnp.concatenate([precursors, x], axis=1)
             prec_mask = jnp.zeros_like(x_mask[:, :1], dtype=bool)
-            # Concatenate masks along the first dimension with jnp.concatenate:
             x_mask = jnp.concatenate([prec_mask, x_mask], axis=1)
         return x, x_mask
