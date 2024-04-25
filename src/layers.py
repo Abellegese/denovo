@@ -7,7 +7,7 @@ Github:
 
 import flax.linen as nn
 import jax.numpy as jnp
-from utils import *
+from src.utils import *
 import jax
 from flax import struct
 from typing import Any
@@ -81,7 +81,7 @@ class EncoderBlock(nn.Module):
             # expand mask
             mask = expand_mask(mask)
         x = self.self_attn(x, mask=mask)
-        x = x + self.dropout(x, deterministic=not self.train)
+        x = x + self.dropout(x)
         x = self.norm1(x)
 
         # MLP part
@@ -90,9 +90,9 @@ class EncoderBlock(nn.Module):
             linear_out = (
                 l(linear_out)
                 if not isinstance(l, nn.Dropout)
-                else l(linear_out, deterministic=not self.train)
+                else l(linear_out)
             )
-        x = x + self.dropout(linear_out, deterministic=not self.train)
+        x = x + self.dropout(linear_out)
         x = self.norm2(x)
 
         return x
