@@ -12,7 +12,7 @@ isotope_error_range: [0, 1]
 dim_model: 768
 n_head: 16
 dim_feedforward: 1024
-n_layers: 9
+n_layers: 8
 dropout: 0.1
 dim_intensity:
 custom_encoder:
