@@ -7,16 +7,32 @@ Github:
 
 import flax.linen as nn
 import jax.numpy as jnp
-from src.utils import *
+from utils import *
 import jax
 from flax import struct
 from typing import Any
-
+import numpy as np
 
 @struct.dataclass
 class Config:
   dtype: Any = jnp.bfloat16
 
+class PositionalEncoding(nn.Module):
+    d_model: int        
+    max_len: int = 5000   
+
+    def setup(self):
+        pe = np.zeros((self.max_len, self.d_model))
+        position = np.arange(0, self.max_len, dtype=np.float32)[:, None]
+        div_term = np.exp(np.arange(0, self.d_model, 2) * (-np.log(10000.0) / self.d_model))
+        pe[:, 0::2] = np.sin(position * div_term)
+        pe[:, 1::2] = np.cos(position * div_term)
+        pe = pe[None]
+        self.pe = np.array(pe)
+
+    def __call__(self, x):
+        x = x + self.pe[:, :x.shape[1]]
+        return x
 
 class MultiScalePeakEmbedding(nn.Module):
     """Multi-scale sinusoidal embedding based on Voronov et. al."""
@@ -61,7 +77,11 @@ class EncoderBlock(nn.Module):
         #     embed_dim=self.input_dim, num_heads=self.num_heads
         # )
         self.self_attn = nn.MultiHeadDotProductAttention(
-            qkv_features=self.input_dim, num_heads=self.num_heads, dtype=Config.dtype
+            qkv_features=self.input_dim, 
+            num_heads=self.num_heads,
+             dropout_rate=self.dropout_prob,
+             deterministic=not self.train, 
+             dtype=Config.dtype
         )
         # Two-layer MLP
         self.linear = [
@@ -88,10 +108,7 @@ class EncoderBlock(nn.Module):
         linear_out = x
         for l in self.linear:
             linear_out = (
-                l(linear_out)
-                if not isinstance(l, nn.Dropout)
-                else l(linear_out)
-            )
+                l(linear_out))
         x = x + self.dropout(linear_out)
         x = self.norm2(x)
 
@@ -170,6 +187,7 @@ class Encoder(nn.Module):
     train: bool = True
 
     def setup(self):
+        self.pos_encoding = PositionalEncoding(self.dim_model, 5000)
         self.latent_spectrum = self.param('latent_spectrum', nn.initializers.normal(), (1, 1, self.dim_model))
         self.encoder = TransformerEncoder(
             num_layers=self.n_layers,
@@ -204,19 +222,20 @@ class Encoder(nn.Module):
             )
         else:
             x = self.peak_encoder(x)
+        x = self.pos_encoding(x)
         # x = self.peak_norm(x)
         # Self-attention on latent spectra AND peaks
         #fmt: off
-        x = jnp.concatenate(
-            (
-                jnp.repeat(self.latent_spectrum, x.shape[0], axis=0), 
-                x
-            ),
-            axis=1,
-        )
-        #fmt: on
-        latent_mask = jnp.zeros((x_mask.shape[0], 1, 1), dtype=bool)
-        x_mask = jnp.concatenate([latent_mask, x_mask], axis=1)
+        # x = jnp.concatenate(
+        #     (
+        #         jnp.repeat(self.latent_spectrum, x.shape[0], axis=0), 
+        #         x
+        #     ),
+        #     axis=1,
+        # )
+        # #fmt: on
+        # latent_mask = jnp.zeros((x_mask.shape[0], 1, 1), dtype=bool)
+        # x_mask = jnp.concatenate([latent_mask, x_mask], axis=1)
 
         x = self.encoder(x, x_mask)
         if not self.dec_precursor_sos:
