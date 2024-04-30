@@ -1,3 +1,10 @@
+# from src.loss import InfoNCELoss
+# import jax
+# import jax.numpy as jnp
+# import flax.linen as nn
+# from src.utils import *
+# from flax import struct
+# from typing import Any
 from loss import InfoNCELoss
 import jax
 import jax.numpy as jnp
@@ -5,6 +12,7 @@ import flax.linen as nn
 from utils import *
 from flax import struct
 from typing import Any
+
 
 
 @struct.dataclass
@@ -18,25 +26,54 @@ def _get_causal_mask(seq_len: int) -> jnp.ndarray:
     mask = mask.at[mask == 1].set(0.0)
     return jnp.transpose(mask)
 
+# class AutoregressiveModel(flax.nn.Module):
+#     output_dim: int
+#     n_heads: int
+#     train:bool = True
+#     dropout:float = 0.1
+
+#     def setup(self):
+#         self.mha = nn.MultiHeadDotProductAttention(
+#             num_heads=self.n_heads, 
+#             deterministic=not self.train, 
+#             dropout_rate=self.dropout, 
+#             self qkv_features=self.output_dim,
+#              dtype=Config.dtype
+#         )
+#         self.layer_norm = nn.LayerNorm()
+#         self.fc = nn.Dense(self.output_dim, dtype=Config.dtype)
+
+#     @nn.compact
+#     def __call__(self, x):
+#         x_mask = _get_causal_mask(x.shape[1])
+#         out = self.mha(x, mask=x_mask)  # Self attention
+#         out = self.layer_norm(x + out)  # Add & Norm
+#         out = self.fc(out)  # Feed forward
+#         return out
 class AutoregressiveModel(nn.Module):
     output_dim: int
     n_heads: int
+    train: bool = True
+    dropout: float = 0.1
 
     def setup(self):
+        self.lm1 = nn.LayerNorm()
         self.mha = nn.MultiHeadDotProductAttention(
-            num_heads=self.n_heads, qkv_features=self.output_dim, dtype=Config.dtype
+            num_heads=self.n_heads,
+            deterministic=not self.train,
+            dropout_rate=self.dropout,
+            qkv_features=self.output_dim,
+            dtype=Config.dtype
         )
-        self.layer_norm = nn.LayerNorm()
         self.fc = nn.Dense(self.output_dim, dtype=Config.dtype)
 
     @nn.compact
     def __call__(self, x):
         x_mask = _get_causal_mask(x.shape[1])
         out = self.mha(x, mask=x_mask)  # Self attention
-        out = self.layer_norm(x + out)  # Add & Norm
+        out = self.lm1(x + out)  # Add & Norm
         out = self.fc(out)  # Feed forward
         return out
-
 class CPCModel(nn.Module):
     input_dim: int
     hidden_dim: int
@@ -44,9 +81,11 @@ class CPCModel(nn.Module):
     batch_size: int
     encoders: any
     regressor:bool = True
+    train:bool = True
+    dropout:float = 0.1
     def setup(self):
         self.encoder = self.encoders
-        self.autoregressor = AutoregressiveModel(self.hidden_dim, self.output_dim)
+        self.autoregressor = AutoregressiveModel(self.hidden_dim, self.output_dim, self.train, self.dropout)
         self.loss = InfoNCELoss(
             self.hidden_dim,
             self.input_dim,
