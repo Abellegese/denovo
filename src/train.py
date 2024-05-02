@@ -29,9 +29,18 @@ from flax import struct
 from typing import Any
 from jax import lax
 import os
+import warnings
 from flax.training.early_stopping import EarlyStopping
+warnings.filterwarnings("ignore")
 
-os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=16"
+# os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=16"
+os.environ["XLA_FLAGS"] = (
+    "--xla_gpu_enable_triton_softmax_fusion=true "
+    "--xla_gpu_triton_gemm_any=false "
+    "--xla_gpu_enable_async_collectives=true "
+    "--xla_gpu_enable_latency_hiding_scheduler=true "
+    "--xla_gpu_enable_highest_priority_async_stream=true "
+)
 # jax.config.update("jax_platform_name", "gpu")
 # Config Path
 PATH = "configs/base.yaml"
@@ -127,6 +136,7 @@ def loss_fn(params, data, batch_size, train):
         batch_size=batch_size,
         encoders=ModelConfig.encoder,
         regressor=True,
+        train=train
     ).apply(
         {"params": params},
         spectra,
@@ -231,7 +241,7 @@ def _build_vocab(config):
 @click.option("--save_path", help="to save the pretrained model")
 def main(learning_rate, momentum, num_epochs, batch_size, save, save_path):
     # Load your data and create dataloade
-    dataset = load_dataset("InstaDeepAI/ms_ninespecies_benchmark", split="train[:50%]")
+    dataset = load_dataset("InstaDeepAI/ms_ninespecies_benchmark", split="train[:1%]")
     # building vocab
     vocab, s2i, i2s = _build_vocab(CONFIG)
     # taking 5% percent of it just for experiment
