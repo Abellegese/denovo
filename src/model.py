@@ -1,10 +1,3 @@
-# from src.loss import InfoNCELoss
-# import jax
-# import jax.numpy as jnp
-# import flax.linen as nn
-# from src.utils import *
-# from flax import struct
-# from typing import Any
 from loss import InfoNCELoss
 import jax
 import jax.numpy as jnp
@@ -13,24 +6,21 @@ from utils import *
 from flax import struct
 from typing import Any
 
-
 @struct.dataclass
 class Config:
     dtype: Any = jnp.bfloat16
-
 
 def make_causal_mask(sql):
     idxs = jnp.arange(sql)
     mask = jnp.where(idxs[:, None] <= idxs[None, :], 0, -1e9)
     return mask
 
-
 class AutoregressiveModel(nn.Module):
     output_dim: int
     n_heads: int
-    num_layers: int = 6 
     train: bool = True
-    dropout: float = 0.1
+    num_layers: int = 4
+    dropout: float = 0.5
 
     def setup(self):
         # Define the decoder block
@@ -58,11 +48,15 @@ class DecoderBlock(nn.Module):
 
     def setup(self):
         # Two-layer MLP
+        self.linf = nn.Dense(128)
         self.linear = [
-            nn.Dense(512),
-            nn.Dropout(rate=self.dropout, deterministic=not self.train),
+            nn.Dense(128),
+            nn.Dropout(
+                rate=self.dropout,
+                deterministic=not self.train
+                ),
             nn.relu,
-            nn.Dense(512),
+            nn.Dense(128),
         ]
         self.lm1 = nn.LayerNorm()
         self.lm2 = nn.LayerNorm()
@@ -75,8 +69,8 @@ class DecoderBlock(nn.Module):
 
     def __call__(self, x):
         x_mask = make_causal_mask(x.shape[1])
-        out = self.mha(x, mask=x_mask)  # Self attention
-        out = self.lm1(x + out)  # Add & Norm
+        out = self.mha(x, mask=x_mask)
+        out = self.lm1(x + out)
         linear_out = out
         for layer in self.linear:
             linear_out = (
@@ -86,8 +80,8 @@ class DecoderBlock(nn.Module):
             )
         out = out + linear_out
         out = self.lm2(out)
+        out = self.linf(out)
         return out
-
 
 class CPCModel(nn.Module):
     input_dim: int
@@ -95,6 +89,7 @@ class CPCModel(nn.Module):
     output_dim: int
     batch_size: int
     encoders: any
+    num_layers: int = 2
     regressor: bool = True
     train: bool = True
     dropout: float = 0.1
@@ -102,7 +97,7 @@ class CPCModel(nn.Module):
     def setup(self):
         self.encoder = self.encoders
         self.autoregressor = AutoregressiveModel(
-            self.hidden_dim, self.output_dim, self.train, self.dropout
+            self.hidden_dim, self.output_dim, self.train, self.num_layers, self.dropout
         )
         self.loss = InfoNCELoss(
             self.hidden_dim,
