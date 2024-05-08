@@ -210,7 +210,6 @@ class Encoder(nn.Module):
     @nn.compact
     def __call__(self, x, p, x_mask):
         return self._encoder(x, p, x_mask)
-
     def _encoder(self, x, p, x_mask):
         if x_mask is None:
             x_mask = ~x.sum(dim=2).bool()
@@ -225,17 +224,17 @@ class Encoder(nn.Module):
         x = self.pos_encoding(x)
         # x = self.peak_norm(x)
         # Self-attention on latent spectra AND peaks
-        #fmt: off
-        # x = jnp.concatenate(
-        #     (
-        #         jnp.repeat(self.latent_spectrum, x.shape[0], axis=0), 
-        #         x
-        #     ),
-        #     axis=1,
-        # )
-        # #fmt: on
-        # latent_mask = jnp.zeros((x_mask.shape[0], 1, 1), dtype=bool)
-        # x_mask = jnp.concatenate([latent_mask, x_mask], axis=1)
+        # fmt: off
+        x = jnp.concatenate(
+            (
+                jnp.repeat(self.latent_spectrum, x.shape[0], axis=0), 
+                x
+            ),
+            axis=1,
+        )
+        # fmt: on
+        latent_mask = jnp.zeros((x_mask.shape[0], 1, 1), dtype=bool)
+        x_mask = jnp.concatenate([latent_mask, x_mask], axis=1)
 
         x = self.encoder(x, x_mask)
         if not self.dec_precursor_sos:
