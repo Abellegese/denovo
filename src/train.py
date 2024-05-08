@@ -355,8 +355,8 @@ def main(learning_rate, momentum, num_epochs, batch_size, save, save_path):
     # building vocab
     vocab, s2i, i2s = _build_vocab(CONFIG)
     console.print("[blue][INFO][/blue]:[green]creating the dataframe[/green]")
-    # dataframe = create_dataframe()
-    dataframe = unpickle_object("train.pkl")
+    dataframe = create_dataframe()
+    #dataframe = unpickle_object("train.pkl")
     # building dataset
     train_ds = SpectrumDataset(dataframe, s2i, CONFIG["n_peaks"], return_str=True)
     # val_ds = SpectrumDataset(val_dataset, s2i, CONFIG["n_peaks"], return_str=True)
