@@ -18,6 +18,7 @@ def make_causal_mask(sql):
 class AutoregressiveModel(nn.Module):
     output_dim: int
     n_heads: int
+    dim_feedforward: int
     train: bool = True
     num_layers: int = 4
     dropout: float = 0.5
@@ -28,6 +29,7 @@ class AutoregressiveModel(nn.Module):
             DecoderBlock(
                 output_dim=self.output_dim,
                 n_heads=self.n_heads,
+                dim_feedforward=self.dim_feedforward,
                 train=self.train,
                 dropout=self.dropout,
             )
@@ -43,28 +45,27 @@ class AutoregressiveModel(nn.Module):
 class DecoderBlock(nn.Module):
     output_dim: int
     n_heads: int
+    dim_feedforward: int
     train: bool = True
     dropout: float = 0.1
-
     def setup(self):
         # Two-layer MLP
-        self.linf = nn.Dense(128)
+        self.linf = nn.Dense(self.output_dim)
         self.linear = [
-            nn.Dense(128),
+            nn.Dense(self.dim_feedforward),
             nn.Dropout(
                 rate=self.dropout,
                 deterministic=not self.train
                 ),
             nn.relu,
-            nn.Dense(128),
+            nn.Dense(self.dim_feedforward),
         ]
         self.lm1 = nn.LayerNorm()
         self.lm2 = nn.LayerNorm()
         self.mha = nn.MultiHeadDotProductAttention(
             num_heads=self.n_heads,
             deterministic=not self.train,
-            dropout_rate=self.dropout,
-            qkv_features=self.output_dim,
+            dropout_rate=self.dropout
         )
 
     def __call__(self, x):
@@ -86,7 +87,9 @@ class DecoderBlock(nn.Module):
 class CPCModel(nn.Module):
     input_dim: int
     hidden_dim: int
+    num_head:int
     output_dim: int
+    dim_feedforward:int
     batch_size: int
     encoders: any
     num_layers: int = 2
@@ -97,7 +100,12 @@ class CPCModel(nn.Module):
     def setup(self):
         self.encoder = self.encoders
         self.autoregressor = AutoregressiveModel(
-            self.hidden_dim, self.output_dim, self.train, self.num_layers, self.dropout
+            output_dim=self.hidden_dim, 
+            n_heads=self.num_head, 
+            dim_feedforward=self.dim_feedforward,
+            train=self.train, 
+            num_layers=self.num_layers, 
+            dropout=self.dropout
         )
         self.loss = InfoNCELoss(
             self.hidden_dim,
