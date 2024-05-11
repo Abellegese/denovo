@@ -72,25 +72,18 @@ class EncoderBlock(nn.Module):
     train: bool
 
     def setup(self):
-        # Attention layer
-        # self.self_attn = MultiheadAttention(
-        #     embed_dim=self.input_dim, num_heads=self.num_heads
-        # )
         self.self_attn = nn.MultiHeadDotProductAttention(
-            qkv_features=self.input_dim, 
             num_heads=self.num_heads,
-             dropout_rate=self.dropout_prob,
-             deterministic=not self.train, 
-             dtype=Config.dtype
+            dropout_rate=self.dropout_prob,
+            deterministic=not self.train, 
+            dtype=Config.dtype
         )
-        # Two-layer MLP
         self.linear = [
             nn.Dense(self.dim_feedforward),
             nn.Dropout(self.dropout_prob, deterministic=not self.train),
             nn.relu,
-            nn.Dense(self.input_dim),
+            nn.Dense(self.dim_feedforward),
         ]
-        # Layers to apply in between the main layers
         self.norm1 = nn.LayerNorm()
         self.norm2 = nn.LayerNorm()
         self.dropout = nn.Dropout(self.dropout_prob, deterministic=not self.train)
