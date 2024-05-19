@@ -9,10 +9,10 @@ precursor_mass_tol: 50 # ppm
 isotope_error_range: [0, 1]
 
 # Model architecture options.
-dim_model: 768
-n_head: 16
-dim_feedforward: 1024
-n_layers: 8
+dim_model: 128
+n_head: 6
+dim_feedforward: 128
+n_layers: 2
 dropout: 0.1
 dim_intensity:
 custom_encoder:
