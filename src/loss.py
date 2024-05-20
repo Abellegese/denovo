@@ -72,7 +72,7 @@ class InfoNCELoss(nn.Module):
         z_k_neg = z_neg[z_neg.shape[0] - Wc_k.shape[0] :, :, :]
         f_k = jnp.squeeze(jnp.matmul(Wc_k, z_k_neg), 1)
         return f_k
-    def calculate_accuracy(logits):
+    def calculate_accuracy(self, logits):
         predictions = jnp.argmax(logits, axis=-1)
         correct_predictions = (predictions == 0)
         accuracy = jnp.mean(correct_predictions)
@@ -113,8 +113,4 @@ class InfoNCELoss(nn.Module):
         print(accuracy)
         loss /= self.pred_timestep
         # Normilizing the loss accross prediction timesteps
-        all_logits = jnp.stack(all_logits, axis=1)
-        accuracy = calculate_accuracy(all_logits)
-        print(accuracy)
-        loss /= self.pred_timestep
         return loss, all_logits
