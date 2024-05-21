@@ -61,24 +61,26 @@ class SpectrumDataset(Dataset):
     def __len__(self) -> int:
         return int(self.df.shape[0])
 
-    def __getitem__(self, idx: int) -> tuple[Tensor, float, int, Tensor | list[str]]:
+    def __getitem__(self, idx: int) -> tuple[Tensor, float, int, Tensor | list[str], str]:
         peptide = ""
 
         if self.data_type == "pl":
+            id = self.df[idx, "experiment_name"]
             mz_array = torch.Tensor(self.df[idx, "mz_array"].to_list())
             int_array = torch.Tensor(self.df[idx, "intensity_array"].to_list())
             precursor_mz = self.df[idx, "precursor_mz"]
             precursor_charge = self.df[idx, "precursor_charge"]
             if self.annotated:
-                peptide = self.df[idx, "modified_sequence"]
+                peptide = self.df[idx, "sequence"]
         elif self.data_type == "pd":
             row = self.df.iloc[idx]
+            id = row["experiment_name"]
             mz_array = torch.Tensor(row["mz_array"])
             int_array = torch.Tensor(row["intensity_array"])
             precursor_mz = row["precursor_mz"]
             precursor_charge = row["precursor_charge"]
             if self.annotated:
-                peptide = row["modified_sequence"]
+                peptide = row["sequence"]
         elif self.data_type == "hf":
             row = self.df[idx]
             mz_array = torch.Tensor(row["mz_array"])
@@ -86,7 +88,7 @@ class SpectrumDataset(Dataset):
             precursor_mz = float(row["precursor_mz"])
             precursor_charge = float(row["precursor_charge"])
             if self.annotated:
-                peptide = row["modified_sequence"]
+                peptide = row["sequence"]
 
         # Split on amino acids allowing for modifications eg. AM(ox)Z -> [A, M(ox), Z]
         # Groups A-Z with any suffix
@@ -103,7 +105,7 @@ class SpectrumDataset(Dataset):
             mz_array, int_array, precursor_mz, precursor_charge
         )
 
-        return spectrum, precursor_mz, precursor_charge, peptide
+        return spectrum, precursor_mz, precursor_charge, peptide, id
 
     def _process_peaks(
         self,
@@ -176,10 +178,10 @@ class SpectrumDataset(Dataset):
 
 
 def collate_batch(
-    batch: list[tuple[Tensor, float, int, Tensor]]
-) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    batch: list[tuple[Tensor, float, int, Tensor, str]]
+) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, str]:
     """Collate batch of samples."""
-    spectra, precursor_mzs, precursor_charges, peptides = zip(*batch)
+    spectra, precursor_mzs, precursor_charges, peptides, id = zip(*batch)
 
     # Pad spectra
     ll = torch.tensor([x.shape[0] for x in spectra], dtype=torch.long)
@@ -205,4 +207,4 @@ def collate_batch(
         [precursor_masses, precursor_charges, precursor_mzs]
     ).T.float()
 
-    return spectra, precursors, spectra_mask, peptides, peptides_mask
+    return spectra, precursors, spectra_mask, peptides, peptides_mask, id
