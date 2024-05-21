@@ -10,10 +10,11 @@ isotope_error_range: [0, 1]
 
 # Model architecture options.
 dim_model: 128
-n_head: 6
+n_head: 8
 dim_feedforward: 128
-n_layers: 2
-dropout: 0.1
+n_layers: 4
+dropout: 0.4
+prediction_step: 12
 dim_intensity:
 custom_encoder:
 
@@ -51,21 +52,23 @@ residues:
   "Q(+.98)": 129.042594
 n_log: 1
 tb_summarywriter: "./logs/instanovo/instanovo-base"
-
+save_path: "/home/abellegese_aims_ac_za/denovo/checkpoint"
 warmup_iters: 100_000
+warmup_epochs: 1
 max_iters: 3_000_000
 learning_rate: 5e-5 #5e-4 5e-5
-weight_decay: 1e-5
+weight_decay: 5e-4
+patient: 20
 
 # Training/inference options.
-train_batch_size: 32
+train_batch_size: 64
 grad_accumulation: 1
 gradient_clip_val: 10.0
 predict_batch_size: 64
 n_beams: 5
 
 logger:
-epochs: 30
+epochs: 20
 num_sanity_val_steps: 0
 
 train_from_scratch: True
